@@ -18,27 +18,20 @@ sudo chmod +x /usr/bin/cnmap
 On the main screen press F1 to start a new scan, a dialog will open up, where you will be asked the target ip address(or range), and the scan type, use the up and down arrow keys to navigate after selecting them, navigate to the “Start Scanning” and press enter, and wait, the results will show up after the scan is finished.
 On the main screen you can use up and down arrows, to scroll through the hosts, left and right to scroll through the pages, and tab to switch between the host list and port list.
 
-┌[ Cursed nmap ]───────────────────────────────────────────────────────────────┐
-│ [New Scan | Save Output | Quit]                                              │
-│──────────────────────────────────────────────────────────────────────────────│
-│┌[Host List]────────────┐┌[Host Detail]─────────────────────────────────────┐ │
-││                       ││Operating System:                                 │ │
-││                       ││IP Address:                                       │ │
-││                       ││Hostname:                                         │ │
-││                       │└──────────────────────────────────────────────────┘ │
-││                       │┌[Port Detail]─────────────────────────────────────┐ │
-││                       ││                                                  │ │
-││                       ││                                                  │ │
-││                       ││                                                  │ │
-││                       ││                                                  │ │
-││                       ││                                                  │ │
-││                       ││                                                  │ │
-││                       ││                                                  │ │
-││                       ││                                                  │ │
-││                       ││                                                  │ │
-││                       ││                                                  │ │
-││                       ││                                                  │ │
-││                       ││                                                  │ │
-│└0 of 0       ──────────┘└0 of 0       ─────────────────────────────────────┘ │
-│Cursed nmap version:0.0.1.1                                                   │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌[ Cursed nmap ]────────────────────────────────┐
+│ [New Scan | Save Output | Quit]               │
+│───────────────────────────────────────────────│
+│┌[Host List]────────────┐┌[Host Detail]──────┐ │
+││                       ││Operating System:  │ │
+││                       ││IP Address:        │ │
+││                       ││Hostname:          │ │
+││                       │└───────────────────┘ │
+││                       │┌[Port Detail]──────┐ │
+││                       ││                   │ │
+││                       ││                   │ │
+││                       ││                   │ │
+││                       ││                   │ │
+│└0 of 0       ──────────┘└0 of 0       ──────┘ │
+│Cursed nmap version:0.0.1.1                    │
+└───────────────────────────────────────────────┘
+
