@@ -20,12 +20,6 @@ class ScanOptions():
     ip_address = ''
     mode = 0
 
-class Host():
-    ip_address = ''
-    mac_address = ''
-    os = 'Unknown'
-    ports = []
-
 # Helper function that we call when we are initializing curses
 def init_application():
     scr = curses.initscr()
