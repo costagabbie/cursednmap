@@ -195,7 +195,7 @@ def newscan_win(options:ScanOptions):
             elif focus == 2:#Confirm "button" is focused
                 del(win)
                 return True
-            elif focus == 4:#Cancel "button" is focused
+            elif focus == 3:#Cancel "button" is focused
                 del(win)
                 return False
         elif keypressed == curses.KEY_CANCEL:
@@ -214,28 +214,23 @@ def perform_scan(nm:nmap,mode:int, target:str):
     except:
         error_dialog('Error scanning',f'cmdline:{nm.command_line()}')
         del(scanning_window)
-        return False    
-def main(arg):
-    scan_opt = ScanOptions()
-    nm = nmap.PortScanner()   
-    stdscr = init_application()
-    stdscr.timeout(10)
-    #Rendering border
+        return False
+
+def mainwindow_clear(stdscr):
     stdscr.border(curses.ACS_VLINE,curses.ACS_VLINE,curses.ACS_HLINE,curses.ACS_HLINE,curses.ACS_ULCORNER,curses.ACS_URCORNER,curses.ACS_LLCORNER,curses.ACS_LRCORNER)
     stdscr.addstr(0,1,"[ Cursed nmap ]")
     #Rendering the toolbar 
     for i in range(curses.COLS-2):
         stdscr.addch(1,1+i,' ',curses.color_pair(2))
         stdscr.addch(2,1+i,curses.ACS_HLINE)
-    stdscr.addstr(1,2,'[New Scan | Save Output | Quit]',curses.color_pair(2))
+    stdscr.addstr(1,2,'[New Scan | Custom Scan | Save Output | Quit]',curses.color_pair(2))
     stdscr.addch(1,3,'N',curses.color_pair(5))
-    stdscr.addch(1,14,'S',curses.color_pair(5))
-    stdscr.addch(1,28,'Q',curses.color_pair(5))
+    stdscr.addch(1,14,'C',curses.color_pair(5))
+    stdscr.addch(1,28,'S',curses.color_pair(5))
+    stdscr.addch(1,42,'Q',curses.color_pair(5))
     #Rendering the Host List Rectangle
     rectangle(stdscr,3,1,curses.LINES-3,25)
     stdscr.addstr(3,2,'[Host List]')
-    stdscr.addstr(curses.LINES -3,2,'             ',curses.color_pair(3))
-    stdscr.addstr(curses.LINES -3,2,'0 of 0',curses.color_pair(3))
     #Rendering the Host Details Rectangle
     rectangle(stdscr,3,26,7,curses.COLS-3)
     stdscr.addstr(3,27,'[Host Detail]')
@@ -245,12 +240,46 @@ def main(arg):
     #Render Port detail
     rectangle(stdscr,8,26,curses.LINES-3,curses.COLS-3)
     stdscr.addstr(8,27,'[Port Detail]')
-    stdscr.addstr(curses.LINES-3,27,'             ',curses.color_pair(3))
-    stdscr.addstr(curses.LINES-3,27,'0 of 0',curses.color_pair(3))
     #Render the status bar
     for i in range(curses.COLS-2):
         stdscr.addch(curses.LINES-2,1+i,' ',curses.color_pair(2))
     stdscr.addstr(curses.LINES-2,1,f'Cursed nmap version:{VERSION_STRING}',curses.color_pair(2))
+
+def mainwindow_update_hostlist(scr:curses.window,scan_result:nmap.PortScanner,item_index):
+    host_index = 0
+    for host in scan_result.all_hosts():
+        if host_index == item_index: #If we are printing the selected host
+            scr.addstr(4+host_index,2,host,curses.color_pair(4)) #Make it highlighted
+            #Print the host details
+            if len(host['osmatch'][1]) > 0:
+                scr.addstr(4,34,host['osmatch'][1])
+            else:
+                scr.addstr(4,34,'Not idenfied')    
+            scr.addstr(5,38,host)
+            scr.addstr(6,38,scan_result[host].hostname())
+        else:
+            scr.addstr(5+host_index,2,host) #Print it normally 
+        host_index+=1
+
+def mainwindow_update_portlist(scr:curses.window,scan_result:nmap.PortScanner,item_index):
+    port_index = 0
+    for proto in scan_result[scan_result.all_hosts()[item_index]].all_protocols():
+        lport = list(scan_result[scan_result.all_hosts()[item_index]][proto])
+        lport.sort()
+        for port in lport:
+            scr.addstr(9+port_index,27,f"{proto}/{port} state:{scan_result[scan_result.all_hosts()[item_index]][proto][port]['state']}")
+            port_index +=1
+
+def main(arg):
+    scan_opt = ScanOptions()
+    scanned_hosts = 0
+    host_list = []
+    selected_host = -1
+    nm = nmap.PortScanner()   
+    stdscr = init_application()
+    stdscr.timeout(10)
+    #Rendering border
+    mainwindow_clear(stdscr)
     #Check if nmap is installed 
     try:
         subprocess.check_output(['whereis','nmap'])
@@ -269,38 +298,33 @@ def main(arg):
             if newscan_win(scan_opt):
                 if not perform_scan(nm,scan_opt.mode,scan_opt.ip_address):
                     continue
-                host_index = 0
-                for host in nm.all_hosts():   
-                    if  host_index < curses.LINES -6:
-                        if host_index == 0:
-                            stdscr.addstr(4+host_index,2,host,curses.color_pair(4))
-                            stdscr.addstr(6,34,host)
-                            stdscr.addstr(7,38,nm[host].hostname())
-                            port_index = 0
-                            for proto in nm[host].all_protocols():
-                                lport = list(nm[host][proto])
-                                lport.sort()
-                                for port in lport:
-                                    if port_index < curses.LINES -6:
-                                        stdscr.addstr(9+port_index,27,f"{proto}/{port} state:{nm[host][proto][port]['state']}")
-                                    port_index +=1
-                        else:
-                            stdscr.addstr(4+host_index,2,host)
-                    host_index += 1
+                mainwindow_clear(stdscr)
+                mainwindow_update_hostlist(stdscr,nm,0)
+                stdscr.addstr(curses.LINES-2,1,f'Cursed nmap version:{VERSION_STRING} | Host count: {nm.all_hosts().count()}',curses.color_pair(2))
                 stdscr.redrawwin()
                 stdscr.refresh()
             else:
-                error_dialog('New Scan','Scan Cancelled!')
-        if keypressed == ord('s'):
+                stdscr.redrawwin()
+                stdscr.refresh()
+        elif keypressed == ord('s'):
             try:
                 filename = input_dialog('Save Scan','Select where you want to save the output file',path.expanduser('~'),260)
                 with open(filename,'w') as filp:
                     filp.write(nm.csv())
+                stdscr.redrawwin()
+                stdscr.refresh()
             except:
                 error_dialog('Error','Error saving the file.')
-        if keypressed == ord('q'):
+        elif keypressed == ord('q'):
             curses.endwin()
             break
+        elif keypressed == curses.KEY_UP:
+            if scanned_hosts == 0:
+                continue
+           
+        elif keypressed == curses.KEY_DOWN:
+            if scanned_hosts == 0:
+                continue
     
 if __name__== '__main__':
     curses.wrapper(main)
