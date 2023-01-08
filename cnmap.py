@@ -262,7 +262,7 @@ def mainwindow_update_hostlist(scr:curses.window,scan_result:nmap.PortScanner,it
                 scr.addstr(6,39,'Not resolved')
             mainwindow_update_portlist(scr,scan_result,item_index)
         else:
-            scr.addstr(5+host_index,2,host,curses.color_pair(0)) #Print it normally 
+            scr.addstr(4+host_index,2,host,curses.color_pair(0)) #Print it normally 
         host_index+=1
 
 def mainwindow_update_portlist(scr:curses.window,scan_result:nmap.PortScanner,item_index):
