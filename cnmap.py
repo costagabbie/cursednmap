@@ -9,9 +9,18 @@ import subprocess
 VERSION_STRING = '0.0.1.1'
 ScanModes = [
             {'name':'Ping Scan','param':'-sn','root':False},
-            {'name':'TCP SYN Scan','param':'-sS','root':True},
-            {'name':'TCP(SYN)+OS','param':'-sS -O -T4','root':True},
+            {'name':'TCP Connect','param':'-sT','root':False},
+            {'name':'TCP SYN Ping','param':'-PS','root':True},
+            {'name':'TCP ACK','param':'-PA','root':True},
+            {'name':'UDP Ping','param':'-PU','root':True},
+            {'name':'ARP Ping','param':'-PR','root':False},
+            {'name':'TCP SYN','param':'-sS','root':True},
+            {'name':'TCP NULL','param':'-sN','root':True},
+            {'name':'TCP FIN','param':'-sF','root':True},
+            {'name':'TCP XMAS','param':'-sX','root':True},
+            {'name':'TCP SYN+OS','param':'-sS -O -T4','root':True},
             {'name':'UDP Scan','param':'-sU','root':True}
+            
             ]
 
 current_uid = getuid()
