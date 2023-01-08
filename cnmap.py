@@ -249,16 +249,20 @@ def mainwindow_update_hostlist(scr:curses.window,scan_result:nmap.PortScanner,it
     host_index = 0
     for host in scan_result.all_hosts():
         if host_index == item_index: #If we are printing the selected host
-            scr.addstr(4+host_index,2,host,curses.color_pair(4)) #Make it highlighted
+            scr.addstr(4+host_index,2,host,curses.color_pair(3)) #Make it highlighted
             #Print the host details
             if 'osmatch' in scan_result[host]:
-                scr.addstr(4,34,scan_result[host]['osmatch'][1])
+                scr.addstr(4,45,scan_result[host]['osmatch'][1])
             else:
-                scr.addstr(4,34,'Not idenfied')    
-            scr.addstr(5,38,host)
-            scr.addstr(6,38,scan_result[host].hostname())
+                scr.addstr(4,45,'Not idenfied')    
+            scr.addstr(5,39,host)
+            if len(scan_result[host].hostname()) >0:
+                scr.addstr(6,39,scan_result[host].hostname())
+            else:
+                scr.addstr(6,39,'Not resolved')
+            mainwindow_update_portlist(scr,scan_result,item_index)
         else:
-            scr.addstr(5+host_index,2,host) #Print it normally 
+            scr.addstr(5+host_index,2,host,curses.color_pair(0)) #Print it normally 
         host_index+=1
 
 def mainwindow_update_portlist(scr:curses.window,scan_result:nmap.PortScanner,item_index):
@@ -298,9 +302,10 @@ def main(arg):
                 if not perform_scan(nm,scan_opt.mode,scan_opt.ip_address):
                     continue
                 scanned_hosts = len(nm.all_hosts())
+                selected_host = 0
                 mainwindow_clear(stdscr)
-                mainwindow_update_hostlist(stdscr,nm,0)
-                stdscr.addstr(curses.LINES-2,1,f'Cursed nmap version:{VERSION_STRING} | Host count: {nm.all_hosts().count()}',curses.color_pair(2))
+                mainwindow_update_hostlist(stdscr,nm,selected_host)
+                stdscr.addstr(curses.LINES-2,1,f'Cursed nmap version:{VERSION_STRING} | Host count: {len(nm.all_hosts())}',curses.color_pair(2))
                 stdscr.redrawwin()
                 stdscr.refresh()
             else:
@@ -311,17 +316,18 @@ def main(arg):
             arguments = input_dialog('Custom Scan','Insert the nmap command parameters(e.g: -sS -A -T4','',200)
             nm.scan(hosts,arguments=arguments)
             scanned_hosts = len(nm.all_hosts())
+            selected_host = 0
             mainwindow_clear(stdscr)
             mainwindow_update_hostlist(stdscr,nm,0)
             stdscr.addstr(curses.LINES-2,1,f'Cursed nmap version:{VERSION_STRING} | Host count: {nm.all_hosts().count()}',curses.color_pair(2))
-            stdscr.redrawwin()
+            #stdscr.redrawwin()
             stdscr.refresh()
         elif keypressed == ord('s'):
             try:
                 filename = input_dialog('Save Scan','Select where you want to save the output file',path.expanduser('~'),260)
                 with open(filename,'w') as filp:
                     filp.write(nm.csv())
-                stdscr.redrawwin()
+                #stdscr.redrawwin()
                 stdscr.refresh()
             except:
                 error_dialog('Error','Error saving the file.')
@@ -335,15 +341,15 @@ def main(arg):
                 selected_host -= 1
                 mainwindow_clear(stdscr)
                 mainwindow_update_hostlist(stdscr,nm,0)
-                stdscr.refresh
+                stdscr.refresh()
         elif keypressed == curses.KEY_DOWN:
             if scanned_hosts == 0:
                 continue
             if selected_host < len(nm.all_hosts())-1:
                 selected_host+=1
                 mainwindow_clear(stdscr)
-                mainwindow_update_hostlist(stdscr,nm,0)
-                stdscr.refresh
+                mainwindow_update_hostlist(stdscr,nm,selected_host)
+                stdscr.refresh()
 
     
 if __name__== '__main__':
