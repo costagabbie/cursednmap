@@ -216,7 +216,21 @@ def perform_scan(nm:nmap,mode:int, target:str):
         del(scanning_window)
         return False
 
-def mainwindow_clear(stdscr):
+def custom_scan(nm:nmap,arguments:str, target:str):
+    try:
+        scanning_window = init_dialog(4,34,floor(curses.LINES / 2 -2),floor(curses.COLS / 2 -17),3,'Scanning')
+        scanning_window.addstr(1,2,"/!\\ Custom scan in progress",curses.A_BLINK)
+        scanning_window.addstr(2,7,"Please wait...")
+        scanning_window.refresh()
+        nm.scan(target,arguments=arguments,sudo=current_uid==0)
+        del(scanning_window)
+        return True
+    except:
+        error_dialog('Error scanning',f'cmdline:{nm.command_line()}')
+        del(scanning_window)
+        return False
+
+def mainwindow_clear(stdscr:curses.window):
     stdscr.border(curses.ACS_VLINE,curses.ACS_VLINE,curses.ACS_HLINE,curses.ACS_HLINE,curses.ACS_ULCORNER,curses.ACS_URCORNER,curses.ACS_LLCORNER,curses.ACS_LRCORNER)
     stdscr.addstr(0,1,"[ Cursed nmap ]")
     #Rendering the toolbar 
@@ -235,11 +249,20 @@ def mainwindow_clear(stdscr):
     rectangle(stdscr,3,26,7,curses.COLS-3)
     stdscr.addstr(3,27,'[Host Detail]')
     stdscr.addstr(4,27,'Operating System:')
+    for i in range(curses.COLS - 47):
+        stdscr.addstr(4,44+i,' ')
     stdscr.addstr(5,27,'IP Address:')
+    for i in range(curses.COLS - 42):
+        stdscr.addstr(5,38+i,' ')
     stdscr.addstr(6,27,'Hostname:')
+    for i in range(curses.COLS - 39):
+        stdscr.addstr(6,36+i,' ')
     #Render Port detail
     rectangle(stdscr,8,26,curses.LINES-3,curses.COLS-3)
     stdscr.addstr(8,27,'[Port Detail]')
+    for i in range(curses.COLS-31):
+        for j in range(curses.LINES-15):
+            stdscr.addch(9+j,28+i,' ')
     #Render the status bar
     for i in range(curses.COLS-2):
         stdscr.addch(curses.LINES-2,1+i,' ',curses.color_pair(2))
@@ -252,9 +275,9 @@ def mainwindow_update_hostlist(scr:curses.window,scan_result:nmap.PortScanner,it
             scr.addstr(4+host_index,2,host,curses.color_pair(3)) #Make it highlighted
             #Print the host details
             if 'osmatch' in scan_result[host]:
-                scr.addstr(4,45,scan_result[host]['osmatch'][1])
+                scr.addstr(4,45,f"{scan_result[host]['osmatch'][0]['name']}({scan_result[host]['osmatch'][0]['accuracy']}%)")
             else:
-                scr.addstr(4,45,'Not idenfied')    
+                scr.addstr(4,45,'Not identified')    
             scr.addstr(5,39,host)
             if len(scan_result[host].hostname()) >0:
                 scr.addstr(6,39,scan_result[host].hostname())
@@ -312,9 +335,10 @@ def main(arg):
                 stdscr.redrawwin()
                 stdscr.refresh()
         elif keypressed == ord('c'):
-            hosts = input_dialog('Custom Scan','Insert the target ip address/range',30)
+            hosts = input_dialog('Custom Scan','Insert the target ip address/range','',30)
             arguments = input_dialog('Custom Scan','Insert the nmap command parameters(e.g: -sS -A -T4','',200)
-            nm.scan(hosts,arguments=arguments)
+            if not custom_scan(nm,arguments,hosts):
+                continue
             scanned_hosts = len(nm.all_hosts())
             selected_host = 0
             mainwindow_clear(stdscr)
@@ -340,7 +364,7 @@ def main(arg):
             if selected_host > 0:
                 selected_host -= 1
                 mainwindow_clear(stdscr)
-                mainwindow_update_hostlist(stdscr,nm,0)
+                mainwindow_update_hostlist(stdscr,nm,selected_host)
                 stdscr.refresh()
         elif keypressed == curses.KEY_DOWN:
             if scanned_hosts == 0:
