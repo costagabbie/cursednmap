@@ -32,6 +32,14 @@ class ScanOptions():
 # Helper function that we call when we are initializing curses
 def init_application():
     scr = curses.initscr()
+    if (curses.COLS < 60) or (curses.LINES < 15):
+        scr.addstr(1,1,'You need at least a 60x15 terminal.')
+        scr.addstr(2,1,'Press any key to quit.')
+        scr.refresh()
+        scr.timeout(10)
+        while True :
+            if scr.getch() > -1:
+                exit()
     curses.init_pair(1,curses.COLOR_BLACK, curses.COLOR_WHITE)
     curses.init_pair(2,curses.COLOR_WHITE, curses.COLOR_BLUE)
     curses.init_pair(3,curses.COLOR_WHITE, curses.COLOR_RED)
