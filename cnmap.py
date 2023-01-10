@@ -238,7 +238,7 @@ def custom_scan(nm:nmap,arguments:str, target:str):
         del(scanning_window)
         return False
 
-def mainwindow_clear(stdscr:curses.window):
+def mainwindow_clear(stdscr:curses.window,focused_list:int):
     stdscr.border(curses.ACS_VLINE,curses.ACS_VLINE,curses.ACS_HLINE,curses.ACS_HLINE,curses.ACS_ULCORNER,curses.ACS_URCORNER,curses.ACS_LLCORNER,curses.ACS_LRCORNER)
     stdscr.addstr(0,1,"[ Cursed nmap ]")
     #Rendering the toolbar 
@@ -252,7 +252,10 @@ def mainwindow_clear(stdscr:curses.window):
     stdscr.addch(1,42,'Q',curses.color_pair(5))
     #Rendering the Host List Rectangle
     rectangle(stdscr,3,1,curses.LINES-3,25)
-    stdscr.addstr(3,2,'[Host List]')
+    if focused_list == 0:
+        stdscr.addstr(3,2,'[Host List]',curses.color_pair(2))    
+    else:
+        stdscr.addstr(3,2,'[Host List]',curses.color_pair(0))
     #Rendering the Host Details Rectangle
     rectangle(stdscr,3,26,7,curses.COLS-3)
     stdscr.addstr(3,27,'[Host Detail]')
@@ -267,7 +270,10 @@ def mainwindow_clear(stdscr:curses.window):
         stdscr.addstr(6,36+i,' ')
     #Render Port detail
     rectangle(stdscr,8,26,curses.LINES-3,curses.COLS-3)
-    stdscr.addstr(8,27,'[Port Detail]')
+    if focused_list == 1:
+        stdscr.addstr(8,27,'[Port Detail]',curses.color_pair(2))
+    else:
+        stdscr.addstr(8,27,'[Port Detail]',curses.color_pair(0))
     for i in range(curses.COLS-31):
         for j in range(curses.LINES-15):
             stdscr.addch(9+j,28+i,' ')
@@ -276,11 +282,12 @@ def mainwindow_clear(stdscr:curses.window):
         stdscr.addch(curses.LINES-2,1+i,' ',curses.color_pair(2))
     stdscr.addstr(curses.LINES-2,1,f'Cursed nmap version:{VERSION_STRING}',curses.color_pair(2))
 
-def mainwindow_update_hostlist(scr:curses.window,scan_result:nmap.PortScanner,item_index):
+def mainwindow_update_hostlist(scr:curses.window,scan_result:nmap.PortScanner,item_index,hostpad:curses.window,portpad:curses.window):
     host_index = 0
     for host in scan_result.all_hosts():
         if host_index == item_index: #If we are printing the selected host
-            scr.addstr(4+host_index,2,host,curses.color_pair(3)) #Make it highlighted
+            #scr.addstr(4+host_index,2,host,curses.color_pair(3)) #Make it highlighted
+            hostpad.addstr(host_index,1,host,curses.color_pair(3))
             #Print the host details
             if 'osmatch' in scan_result[host]:
                 scr.addstr(4,45,f"{scan_result[host]['osmatch'][0]['name']}({scan_result[host]['osmatch'][0]['accuracy']}%)")
@@ -291,18 +298,19 @@ def mainwindow_update_hostlist(scr:curses.window,scan_result:nmap.PortScanner,it
                 scr.addstr(6,39,scan_result[host].hostname())
             else:
                 scr.addstr(6,39,'Not resolved')
-            mainwindow_update_portlist(scr,scan_result,item_index)
+            mainwindow_update_portlist(scr,scan_result,item_index,portpad)
         else:
-            scr.addstr(4+host_index,2,host,curses.color_pair(0)) #Print it normally 
+            #scr.addstr(4+host_index,2,host,curses.color_pair(0)) #Print it normally
+            hostpad.addstr(host_index,1,host,curses.color_pair(0)) 
         host_index+=1
 
-def mainwindow_update_portlist(scr:curses.window,scan_result:nmap.PortScanner,item_index):
+def mainwindow_update_portlist(scr:curses.window,scan_result:nmap.PortScanner,item_index:int,portpad:curses.window):
     port_index = 0
     for proto in scan_result[scan_result.all_hosts()[item_index]].all_protocols():
         lport = list(scan_result[scan_result.all_hosts()[item_index]][proto])
         lport.sort()
         for port in lport:
-            scr.addstr(9+port_index,27,f"{proto}/{port} state:{scan_result[scan_result.all_hosts()[item_index]][proto][port]['state']}")
+            portpad.addstr(port_index,1,f"{proto}/{port} state:{scan_result[scan_result.all_hosts()[item_index]][proto][port]['state']}")
             port_index +=1
 
 def main(arg):
@@ -311,10 +319,15 @@ def main(arg):
     selected_host = -1
     nm = nmap.PortScanner()   
     stdscr = init_application()
+    hostlist_pad = curses.newpad(1,24)
+    hostlist_page = 0
+    portlist_pad = curses.newpad(curses.LINES * 10,curses.COLS-31)
+    portlist_page = 0
+    focused_list = 0
     stdscr.timeout(10)
     #Rendering border
-    mainwindow_clear(stdscr)
-    #Check if nmap is installed 
+    mainwindow_clear(stdscr,focused_list)
+    #Check if nmap i,focused_lists installed 
     try:
         subprocess.check_output(['whereis','nmap'])
     except:
@@ -323,7 +336,6 @@ def main(arg):
     #Check if we are root, and warn if we are not
     if current_uid != 0:
         error_dialog('Warning','Not running as root, this will limit your scan options!')
-        stdscr.redrawwin()
         stdscr.refresh()
     stdscr.refresh()
     while(True):
@@ -334,13 +346,17 @@ def main(arg):
                     continue
                 scanned_hosts = len(nm.all_hosts())
                 selected_host = 0
-                mainwindow_clear(stdscr)
-                mainwindow_update_hostlist(stdscr,nm,selected_host)
-                stdscr.addstr(curses.LINES-2,1,f'Cursed nmap version:{VERSION_STRING} | Host count: {len(nm.all_hosts())}',curses.color_pair(2))
-                stdscr.redrawwin()
-                stdscr.refresh()
+                if scanned_hosts > 0:
+                    hostlist_pad = curses.newpad(scanned_hosts,24)
+                    mainwindow_clear(stdscr,focused_list)
+                    mainwindow_update_hostlist(stdscr,nm,selected_host,hostlist_pad,portlist_pad)
+                    stdscr.addstr(curses.LINES-2,1,f'Cursed nmap version:{VERSION_STRING} | Host count: {len(nm.all_hosts())}',curses.color_pair(2))
+                    stdscr.refresh()
+                    hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
+                    portlist_pad.refresh(0,0,9,28,curses.LINES-4,curses.COLS-4)
+                else:
+                    error_dialog('Warning','No hosts found!')
             else:
-                stdscr.redrawwin()
                 stdscr.refresh()
         elif keypressed == ord('c'):
             hosts = input_dialog('Custom Scan','Insert the target ip address/range','',30)
@@ -349,17 +365,18 @@ def main(arg):
                 continue
             scanned_hosts = len(nm.all_hosts())
             selected_host = 0
-            mainwindow_clear(stdscr)
-            mainwindow_update_hostlist(stdscr,nm,0)
-            stdscr.addstr(curses.LINES-2,1,f'Cursed nmap version:{VERSION_STRING} | Host count: {nm.all_hosts().count()}',curses.color_pair(2))
-            #stdscr.redrawwin()
-            stdscr.refresh()
+            if scanned_hosts > 0:
+                mainwindow_clear(stdscr,focused_list)
+                mainwindow_update_hostlist(stdscr,nm,0)
+                stdscr.addstr(curses.LINES-2,2,f'Cursed nmap version:{VERSION_STRING} | Host count: {nm.all_hosts().count()}',curses.color_pair(2))
+                stdscr.refresh()
+                hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
+                portlist_pad.refresh(0,0,9,28,curses.LINES-4,curses.COLS-4)
         elif keypressed == ord('s'):
             try:
                 filename = input_dialog('Save Scan','Select where you want to save the output file',path.expanduser('~'),260)
                 with open(filename,'w') as filp:
                     filp.write(nm.csv())
-                #stdscr.redrawwin()
                 stdscr.refresh()
             except:
                 error_dialog('Error','Error saving the file.')
@@ -369,20 +386,50 @@ def main(arg):
         elif keypressed == curses.KEY_UP:
             if scanned_hosts == 0:
                 continue
-            if selected_host > 0:
-                selected_host -= 1
-                mainwindow_clear(stdscr)
-                mainwindow_update_hostlist(stdscr,nm,selected_host)
-                stdscr.refresh()
+            if focused_list == 0:
+                if selected_host > 0:
+                    selected_host -= 1
+                    mainwindow_clear(stdscr,focused_list)
+                    mainwindow_update_hostlist(stdscr,nm,selected_host,hostlist_pad,portlist_pad)
+                    stdscr.refresh()
+                    if selected_host <= curses.LINES - 7:
+                        hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
+                    else:
+                        hostlist_pad.refresh(selected_host,0,4,2,curses.LINES-3,23)
+            else:
+                portlist_pad.refresh(0,0,9,28,curses.LINES-4,curses.COLS-4)
+
         elif keypressed == curses.KEY_DOWN:
             if scanned_hosts == 0:
                 continue
-            if selected_host < len(nm.all_hosts())-1:
-                selected_host+=1
-                mainwindow_clear(stdscr)
-                mainwindow_update_hostlist(stdscr,nm,selected_host)
-                stdscr.refresh()
+            
+            if focused_list == 0:
+                if selected_host < len(nm.all_hosts())-1:
+                    selected_host+=1
+                    mainwindow_clear(stdscr,focused_list)
+                    mainwindow_update_hostlist(stdscr,nm,selected_host,hostlist_pad,portlist_pad)
+                    stdscr.refresh()
+                    if selected_host <= curses.LINES - 7:
+                        hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
+                    else:
+                        hostlist_pad.refresh(selected_host,0,4,2,curses.LINES-3,23)
+            else:
+                portlist_pad.refresh(0,0,9,28,curses.LINES-4,curses.COLS-4)
 
+        elif keypressed == curses.KEY_LEFT: #tab key
+            if focused_list == 1:
+                focused_list =0
+                mainwindow_clear(stdscr,focused_list)
+            if scanned_hosts > 0:
+                mainwindow_update_hostlist(stdscr,nm,selected_host,hostlist_pad,portlist_pad)
+            stdscr.refresh()
+        elif keypressed == curses.KEY_RIGHT: #tab key
+            if focused_list == 0:
+                focused_list =1
+                mainwindow_clear(stdscr,focused_list)
+            if scanned_hosts > 0:
+                mainwindow_update_hostlist(stdscr,nm,selected_host,hostlist_pad,portlist_pad)
+            stdscr.refresh()
     
 if __name__== '__main__':
     curses.wrapper(main)
