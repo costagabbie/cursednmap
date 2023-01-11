@@ -391,8 +391,8 @@ def main(arg):
             selected_host = 0
             if scanned_hosts > 0:
                 mainwindow_clear(stdscr,focused_list)
-                mainwindow_update_hostlist(stdscr,nm,0)
-                stdscr.addstr(curses.LINES-2,2,f'Cursed nmap version:{VERSION_STRING} | Host count: {nm.all_hosts().count()}',curses.color_pair(2))
+                mainwindow_update_hostlist(stdscr,nm,0,hostlist_pad,portlist_pad)
+                stdscr.addstr(curses.LINES-2,2,f'Cursed nmap version:{VERSION_STRING} | Host count: {len(nm.all_hosts())}',curses.color_pair(2))
                 stdscr.refresh()
                 hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
                 portlist_pad.refresh(0,0,12,28,curses.LINES-4,curses.COLS-4)
