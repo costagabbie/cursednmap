@@ -257,7 +257,7 @@ def mainwindow_clear(stdscr:curses.window,focused_list:int):
     else:
         stdscr.addstr(3,2,'[Host List]',curses.color_pair(0))
     #Rendering the Host Details Rectangle
-    rectangle(stdscr,3,26,9,curses.COLS-3)
+    rectangle(stdscr,3,26,10,curses.COLS-3)
     stdscr.addstr(3,27,'[Host Detail]')
     stdscr.addstr(4,27,'Operating System:')
     for i in range(curses.COLS - 47):
@@ -274,15 +274,18 @@ def mainwindow_clear(stdscr:curses.window,focused_list:int):
     stdscr.addstr(8,27,'Vendor:')
     for i in range(curses.COLS - 40):
         stdscr.addstr(8,34+i,' ')
+    stdscr.addstr(9,27,'Uptime:')
+    for i in range(curses.COLS - 40):
+        stdscr.addstr(9,34+i,' ')
     #Render Port detail
-    rectangle(stdscr,10,26,curses.LINES-3,curses.COLS-3)
+    rectangle(stdscr,11,26,curses.LINES-3,curses.COLS-3)
     if focused_list == 1:
-        stdscr.addstr(10,27,'[Port Detail]',curses.color_pair(2))
+        stdscr.addstr(11,27,'[Port Detail]',curses.color_pair(2))
     else:
-        stdscr.addstr(10,27,'[Port Detail]',curses.color_pair(0))
+        stdscr.addstr(11,27,'[Port Detail]',curses.color_pair(0))
     for i in range(curses.COLS-31):
         for j in range(curses.LINES-15):
-            stdscr.addch(11+j,28+i,' ')
+            stdscr.addch(12+j,28+i,' ')
     #Render the status bar
     for i in range(curses.COLS-2):
         stdscr.addch(curses.LINES-2,1+i,' ',curses.color_pair(2))
@@ -298,19 +301,22 @@ def mainwindow_update_hostlist(scr:curses.window,scan_result:nmap.PortScanner,it
             if 'osmatch' in scan_result[host]:
                 try:
                     scr.addstr(4,45,f"{scan_result[host]['osmatch'][0]['name']}(")
-                    scr.addstr(f"{scan_result[host]['osmatch'][0]['accuracy']}%)")
                 except:
                     scr.addstr(4,45,"Unknown")
+                
             else:
                 scr.addstr(4,45,'Not identified')
             if 'vendor' in scan_result[host]:
                 try:
-                    scr.addstr(7,36,scan_result[host]['vendor'][0])
-                    scr.addstr(8,34,scan_result[host]['vendor'][1])
+                    scr.addstr(7,36,list(scan_result[host]['vendor'])[0])
+                    scr.addstr(8,34,list(scan_result[host]['vendor'])[1])
                 except:
                     scr.addstr(8,34,"Unknown")
-
-
+            if 'uptime' in scan_result[host]:
+                try:
+                    scr.addstr(9,34,f"{scan_result[host]['uptime']['seconds']}s (boot:{scan_result[host]['uptime']['lastboot']})")
+                except:
+                    scr.addstr(9,34,'Unknown')
             scr.addstr(5,39,host)
             if len(scan_result[host].hostname()) >0:
                 scr.addstr(6,39,scan_result[host].hostname())
@@ -371,7 +377,7 @@ def main(arg):
                     stdscr.addstr(curses.LINES-2,1,f'Cursed nmap version:{VERSION_STRING} | Host count: {len(nm.all_hosts())}',curses.color_pair(2))
                     stdscr.refresh()
                     hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
-                    portlist_pad.refresh(0,0,11,28,curses.LINES-4,curses.COLS-4)
+                    portlist_pad.refresh(0,0,12,28,curses.LINES-4,curses.COLS-4)
                 else:
                     error_dialog('Warning','No hosts found!')
             else:
@@ -389,7 +395,7 @@ def main(arg):
                 stdscr.addstr(curses.LINES-2,2,f'Cursed nmap version:{VERSION_STRING} | Host count: {nm.all_hosts().count()}',curses.color_pair(2))
                 stdscr.refresh()
                 hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
-                portlist_pad.refresh(0,0,11,28,curses.LINES-4,curses.COLS-4)
+                portlist_pad.refresh(0,0,12,28,curses.LINES-4,curses.COLS-4)
         elif keypressed == ord('s'):
             try:
                 filename = input_dialog('Save Scan','Select where you want to save the output file',path.expanduser('~'),260)
@@ -400,7 +406,7 @@ def main(arg):
                     hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
                 else:
                     hostlist_pad.refresh(selected_host,0,4,2,curses.LINES-3,23)
-                portlist_pad.refresh(0,0,11,28,curses.LINES-4,curses.COLS-4)
+                portlist_pad.refresh(0,0,12,28,curses.LINES-4,curses.COLS-4)
             except:
                 error_dialog('Error','Error saving the file.')
                 stdscr.refresh()
@@ -408,7 +414,7 @@ def main(arg):
                     hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
                 else:
                     hostlist_pad.refresh(selected_host,0,4,2,curses.LINES-3,23)
-                portlist_pad.refresh(0,0,11,28,curses.LINES-4,curses.COLS-4)
+                portlist_pad.refresh(0,0,12,28,curses.LINES-4,curses.COLS-4)
 
         elif keypressed == ord('q'):
             curses.endwin()
@@ -426,7 +432,7 @@ def main(arg):
                 hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
             else:
                 hostlist_pad.refresh(selected_host,0,4,2,curses.LINES-3,23)
-            portlist_pad.refresh(0,0,11,28,curses.LINES-4,curses.COLS-4)
+            portlist_pad.refresh(0,0,12,28,curses.LINES-4,curses.COLS-4)
 
         elif keypressed == curses.KEY_DOWN:
             if scanned_hosts == 0:
@@ -442,7 +448,7 @@ def main(arg):
                 hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
             else:
                 hostlist_pad.refresh(selected_host,0,4,2,curses.LINES-3,23)
-            portlist_pad.refresh(0,0,11,28,curses.LINES-4,curses.COLS-4)
+            portlist_pad.refresh(0,0,12,28,curses.LINES-4,curses.COLS-4)
 
         elif keypressed == curses.KEY_LEFT: #tab key
             if focused_list == 1:
@@ -455,7 +461,7 @@ def main(arg):
                 hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
             else:
                 hostlist_pad.refresh(selected_host,0,4,2,curses.LINES-3,23)
-            portlist_pad.refresh(0,0,11,28,curses.LINES-4,curses.COLS-4)
+            portlist_pad.refresh(0,0,12,28,curses.LINES-4,curses.COLS-4)
 
         elif keypressed == curses.KEY_RIGHT: #tab key
             if focused_list == 0:
@@ -468,7 +474,7 @@ def main(arg):
                 hostlist_pad.refresh(0,0,4,2,curses.LINES-3,23)
             else:
                 hostlist_pad.refresh(selected_host,0,4,2,curses.LINES-3,23)
-            portlist_pad.refresh(0,0,11,28,curses.LINES-4,curses.COLS-4)
+            portlist_pad.refresh(0,0,12,28,curses.LINES-4,curses.COLS-4)
     
 if __name__== '__main__':
     curses.wrapper(main)
