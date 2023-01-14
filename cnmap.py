@@ -6,12 +6,14 @@ from os import getuid,path,environ, mkdir
 import nmap
 import subprocess
 import json
-VERSION_STRING = '0.0.1.1'
+
+#Just dome globals
+VERSION_STRING = '0.0.2.1'
 CONFIG_DIR = path.join(environ['HOME'],'.config','cnmap')
 ScanModes = []
-
 current_uid = getuid()
 
+#Class to hold what scan options we choose
 class ScanOptions():
     ip_address = ''
     mode = 0
@@ -99,7 +101,7 @@ def init_dialog(height:int, width:int, pos_y:int, pos_x:int,color_pair:int,title
 #--------------- Beginning of Reusable dialogs section ---------------
 def error_dialog(title:str,message:str):
     msglen = len(message)
-    win = init_dialog(4,msglen+4,floor(curses.LINES / 2),floor(curses.COLS / 2 - msglen/ 2 -2),3,title)
+    win = init_dialog(4,msglen+4,floor(curses.LINES / 2),floor(curses.COLS / 2 - msglen/ 2 -2),3,title) #Sizing and centering the dialog
     win.addstr(1,2,message,curses.color_pair(4))
     win.addstr(2,2,'Press ENTER to continue')
     win.redrawwin()
@@ -112,7 +114,7 @@ def error_dialog(title:str,message:str):
 
 def input_dialog(title:str, message:str, default_text:str, max_length:int):
     msglen = len(message)
-    if (msglen >= max_length) or (max_length >= curses.COLS -4):
+    if (msglen >= max_length) or (max_length >= curses.COLS -4): #if the length of the input is bigger than the screen
         win = init_dialog(5,msglen+4,floor(curses.LINES / 2),floor(curses.COLS / 2 - msglen/ 2 -2),2,title)
     else:
         win = init_dialog(5,max_length+4,floor(curses.LINES / 2),floor(curses.COLS / 2 - max_length/ 2 -2),2,title)
@@ -122,20 +124,20 @@ def input_dialog(title:str, message:str, default_text:str, max_length:int):
     win.refresh()
     while(True):
         keypressed = win.getch()
-        if (keypressed == curses.KEY_BACKSPACE) or (keypressed == 127) or (keypressed == ord("\b")):
-            if (msglen >= max_length) or (max_length >= curses.COLS -4):
-                for i in range(msglen -4 ):
+        if (keypressed == curses.KEY_BACKSPACE) or (keypressed == 127) or (keypressed == ord("\b")): #Handling the backspace
+            if (msglen >= max_length) or (max_length >= curses.COLS -4): #if the is bigger then the screen size
+                for i in range(msglen -4 ): #we fill up with blank space the msglen
                     win.addch(3,2+i,' ')
-            else:
+            else: #if it is not then with the max_length
                 for i in range(max_length):
                     win.addch(3,2+i,' ')
             result = result[:-1]
             win.addstr(3,2,result)
             win.refresh()
-        elif (keypressed == curses.KEY_ENTER) or (keypressed in [10,13]):
+        elif (keypressed == curses.KEY_ENTER) or (keypressed in [10,13]): #Enter was pressed so we're done with the dialog
             del(win)
             return result
-        elif(keypressed >=32) and (keypressed <=126) :
+        elif(keypressed >=32) and (keypressed <=126) : #typing key
             result += chr(keypressed)
             win.addstr(3,2,result)
             win.refresh()
@@ -331,7 +333,7 @@ def mainwindow_update_hostlist(scr:curses.window,scan_result:nmap.PortScanner,it
         if host_index == item_index: #If we are printing the selected host
             #scr.addstr(4+host_index,2,host,curses.color_pair(3)) #Make it highlighted
             hostpad.addstr(host_index,0,host,curses.color_pair(3))
-            #Print the host details
+            #Print the host details if they are gathered in the scan
             if 'osmatch' in scan_result[host]:
                 try:
                     scr.addstr(4,45,f"{scan_result[host]['osmatch'][0]['name']}(")
@@ -340,18 +342,21 @@ def mainwindow_update_hostlist(scr:curses.window,scan_result:nmap.PortScanner,it
                 
             else:
                 scr.addstr(4,45,'Not identified')
+            #Print the vendor details (mac / vendor name ) if they are gathered in the scan
             if 'vendor' in scan_result[host]:
                 try:
-                    scr.addstr(7,36,list(scan_result[host]['vendor'])[0])
-                    scr.addstr(8,34,list(scan_result[host]['vendor'])[1])
+                    scr.addstr(7,36,list(scan_result[host]['vendor'])[0]) #Mac
+                    scr.addstr(8,34,list(scan_result[host]['vendor'])[1]) #Vendor Name
                 except:
                     scr.addstr(8,34,"Unknown")
+            #Print the uptime if it is gathered in the scan
             if 'uptime' in scan_result[host]:
                 try:
                     scr.addstr(9,34,f"{scan_result[host]['uptime']['seconds']}s (boot:{scan_result[host]['uptime']['lastboot']})")
                 except:
                     scr.addstr(9,34,'Unknown')
             scr.addstr(5,39,host)
+            #If we scanned hostname it is resolved(like gnu.org is 209.51.188.116) and we print it
             if len(scan_result[host].hostname()) >0:
                 scr.addstr(6,39,scan_result[host].hostname())
             else:
@@ -365,8 +370,8 @@ def mainwindow_update_hostlist(scr:curses.window,scan_result:nmap.PortScanner,it
 def mainwindow_update_portlist(scr:curses.window,scan_result:nmap.PortScanner,item_index:int,portpad:curses.window):
     port_index = 0
     for proto in scan_result[scan_result.all_hosts()[item_index]].all_protocols():
-        lport = list(scan_result[scan_result.all_hosts()[item_index]][proto])
-        lport.sort()
+        lport = list(scan_result[scan_result.all_hosts()[item_index]][proto]) #we make a list 
+        lport.sort()#so we can sort it
         for port in lport:
             portpad.addstr(port_index,0,f"{proto}/{port} state:{scan_result[scan_result.all_hosts()[item_index]][proto][port]['state']}")
             port_index +=1
