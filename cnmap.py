@@ -2,26 +2,13 @@
 import curses
 from curses.textpad import Textbox, rectangle
 from math import floor
-from os import getuid,path
+from os import getuid,path,environ, mkdir
 import nmap
 import subprocess
-
+import json
 VERSION_STRING = '0.0.1.1'
-ScanModes = [
-            {'name':'Ping Scan','param':'-sn','root':False},
-            {'name':'TCP Connect','param':'-sT','root':False},
-            {'name':'TCP SYN Ping','param':'-PS','root':True},
-            {'name':'TCP ACK','param':'-PA','root':True},
-            {'name':'UDP Ping','param':'-PU','root':True},
-            {'name':'ARP Ping','param':'-PR','root':False},
-            {'name':'TCP SYN','param':'-sS','root':True},
-            {'name':'TCP NULL','param':'-sN','root':True},
-            {'name':'TCP FIN','param':'-sF','root':True},
-            {'name':'TCP XMAS','param':'-sX','root':True},
-            {'name':'TCP SYN+OS','param':'-sS -O -T4','root':True},
-            {'name':'UDP Scan','param':'-sU','root':True}
-            
-            ]
+CONFIG_DIR = path.join(environ['HOME'],'.config','cnmap')
+ScanModes = []
 
 current_uid = getuid()
 
@@ -49,6 +36,53 @@ def init_application():
     curses.curs_set(0)
     curses.noecho()
     return scr
+
+def load_presets(can_create:bool=True):
+    if path.exists(path.join(CONFIG_DIR,'presets.json')):
+        with open(path.join(CONFIG_DIR,'presets.json'),'r') as filp:
+            for line in filp :
+                jsonContent = jsonContent + line
+        return json.loads(jsonContent)
+    else:
+        if can_create:
+            if not path.exists(CONFIG_DIR):
+                try:
+                    mkdir(CONFIG_DIR)
+                except:
+                    print(f'ERROR: Could not create directory {CONFIG_DIR}')
+                    exit()
+            with open(path.join(CONFIG_DIR,'presets.json'),'w') as filp:
+                filp.write(json.dumps([
+            {'name':'Ping Scan','param':'-sn','root':False},
+            {'name':'TCP Connect','param':'-sT','root':False},
+            {'name':'TCP SYN Ping','param':'-PS','root':True},
+            {'name':'TCP ACK','param':'-PA','root':True},
+            {'name':'UDP Ping','param':'-PU','root':True},
+            {'name':'ARP Ping','param':'-PR','root':False},
+            {'name':'TCP SYN','param':'-sS','root':True},
+            {'name':'TCP NULL','param':'-sN','root':True},
+            {'name':'TCP FIN','param':'-sF','root':True},
+            {'name':'TCP XMAS','param':'-sX','root':True},
+            {'name':'TCP SYN+OS','param':'-sS -O -T4','root':True},
+            {'name':'UDP Scan','param':'-sU','root':True}
+            ]))   
+        return [
+            {'name':'Ping Scan','param':'-sn','root':False},
+            {'name':'TCP Connect','param':'-sT','root':False},
+            {'name':'TCP SYN Ping','param':'-PS','root':True},
+            {'name':'TCP ACK','param':'-PA','root':True},
+            {'name':'UDP Ping','param':'-PU','root':True},
+            {'name':'ARP Ping','param':'-PR','root':False},
+            {'name':'TCP SYN','param':'-sS','root':True},
+            {'name':'TCP NULL','param':'-sN','root':True},
+            {'name':'TCP FIN','param':'-sF','root':True},
+            {'name':'TCP XMAS','param':'-sX','root':True},
+            {'name':'TCP SYN+OS','param':'-sS -O -T4','root':True},
+            {'name':'UDP Scan','param':'-sU','root':True}
+            ]
+
+
+
 
 # Helper function that we call to initialize new dialog windows
 def init_dialog(height:int, width:int, pos_y:int, pos_x:int,color_pair:int,title:str):
@@ -341,6 +375,8 @@ def main(arg):
     scan_opt = ScanOptions()
     scanned_hosts = 0
     selected_host = -1
+    global ScanModes 
+    ScanModes = load_presets(True)
     nm = nmap.PortScanner()   
     stdscr = init_application()
     hostlist_pad = curses.newpad(1,24)
