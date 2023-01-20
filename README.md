@@ -3,11 +3,15 @@ A simple front-end to make nmap usage easy for people that have trouble memorizi
 ## Dependencies
 ### python3-nmap
 Debian/Ubuntu/Mint: apt install python3-nmap
+
 Arch(AUR): https://aur.archlinux.org/packages/python-nmap
+
 Pypi: pip install python-nmap
 ### nmap(duuh)
 Debian/Ubuntu/Mint: apt install nmap
+
 Arch: pacman -S nmap
+
 Gentoo: seriously? if you are using gentoo you shouldn't be needing help to install nmap
 ### Install(optional)
 git clone https://github.com/costagabbie/cursednmap.git
